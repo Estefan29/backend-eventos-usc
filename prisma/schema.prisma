@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  correo      String    @unique
+  contraseña  String
+  rol         Rol       @default(USUARIO)
+  facultad    String?
+  creadoEn    DateTime  @default(now())
+  inscripciones Inscripcion[]
+}
+
+model Evento {
+  id          Int       @id @default(autoincrement())
+  titulo      String
+  descripcion String
+  fecha       DateTime
+  lugar       String
+  cupo        Int
+  precio      Float     @default(0)
+  esPago      Boolean   @default(false)
+  estado      Estado    @default(PUBLICADO)
+  creadorId   Int
+  creador     Usuario   @relation(fields: [creadorId], references: [id])
+  inscripciones Inscripcion[]
+  creadoEn    DateTime  @default(now())
+}
+
+model Inscripcion {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  eventoId   Int
+  estadoPago EstadoPago @default(PENDIENTE)
+  createdAt  DateTime @default(now())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  evento     Evento   @relation(fields: [eventoId], references: [id])
+  ticketQR   String?
+}
+
+model Pago {
+  id            Int      @id @default(autoincrement())
+  inscripcionId Int
+  proveedor     String
+  referencia    String
+  monto         Float
+  estado        EstadoPago
+  creadoEn      DateTime @default(now())
+  inscripcion   Inscripcion @relation(fields: [inscripcionId], references: [id])
+}
+
+enum Rol {
+  ADMIN
+  USUARIO
+}
+
+enum Estado {
+  BORRADOR
+  PUBLICADO
+  CANCELADO
+  FINALIZADO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}

@@ -8,57 +8,139 @@ datasource db {
 }
 
 model Usuario {
-  id          Int       @id @default(autoincrement())
-  nombre      String
-  correo      String    @unique
-  contraseña  String
-  rol         Rol       @default(USUARIO)
-  facultad    String?
-  creadoEn    DateTime  @default(now())
-  inscripciones Inscripcion[]
+  id                                     String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  correo                                 String         @unique @db.VarChar(255)
+  contrasena                             String         @db.VarChar(255)
+  nombre                                 String         @db.VarChar(100)
+  apellido                               String         @db.VarChar(100)
+  rol                                    String         @db.VarChar(20)
+  tipo_usuario                           String?        @db.VarChar(20)
+  tipo_documento                         String?        @db.VarChar(20)
+  numero_documento                       String?        @db.VarChar(50)
+  telefono                               String?        @db.VarChar(20)
+  activo                                 Boolean?       @default(true)
+  correo_verificado                      Boolean?       @default(false)
+  token_recuperar_contrasena             String?        @db.VarChar(255)
+  expiracion_token                       DateTime?      @db.Timestamp(6)
+  creado_en                              DateTime?      @default(now()) @db.Timestamp(6)
+  actualizado_en                         DateTime?      @default(now()) @updatedAt @db.Timestamp(6)
+  eventosCreados                         Evento[]       @relation("UsuarioEventos")
+  inscripciones                          Inscripcion[]
+  notificaciones                         Notificacion[]
+  ticketsValidados                       Ticket[]       @relation("TicketsValidados")
+  tickets_tickets_validado_porTousuarios Ticket[]       @relation("tickets_validado_porTousuarios")
+
+  @@map("usuarios")
 }
 
 model Evento {
-  id          Int       @id @default(autoincrement())
-  titulo      String
-  descripcion String
-  fecha       DateTime
-  lugar       String
-  cupo        Int
-  precio      Float     @default(0)
-  esPago      Boolean   @default(false)
-  estado      Estado    @default(PUBLICADO)
-  creadorId   Int
-  creador     Usuario   @relation(fields: [creadorId], references: [id])
-  inscripciones Inscripcion[]
-  creadoEn    DateTime  @default(now())
+  id                 String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  titulo             String        @db.VarChar(255)
+  descripcion        String
+  tipo_evento        String        @db.VarChar(20)
+  tipo_pago          String        @db.VarChar(20)
+  precio             Decimal?      @default(0) @db.Decimal(10, 2)
+  lugar              String        @db.VarChar(255)
+  direccion          String?
+  fecha_inicio       DateTime      @db.Timestamp(6)
+  fecha_fin          DateTime      @db.Timestamp(6)
+  inicio_inscripcion DateTime      @db.Timestamp(6)
+  fin_inscripcion    DateTime      @db.Timestamp(6)
+  capacidad          Int
+  cupos_disponibles  Int
+  url_imagen         String?       @db.VarChar(500)
+  activo             Boolean?      @default(true)
+  creado_por         String?       @db.Uuid
+  creado_en          DateTime?     @default(now()) @db.Timestamp(6)
+  actualizado_en     DateTime?     @default(now()) @updatedAt @db.Timestamp(6)
+  creador            Usuario?      @relation("UsuarioEventos", fields: [creado_por], references: [id], onUpdate: NoAction)
+  inscripciones      Inscripcion[]
+
+  @@map("eventos")
 }
 
 model Inscripcion {
-  id         Int      @id @default(autoincrement())
-  usuarioId  Int
-  eventoId   Int
-  estadoPago EstadoPago @default(PENDIENTE)
-  createdAt  DateTime @default(now())
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
-  evento     Evento   @relation(fields: [eventoId], references: [id])
-  ticketQR   String?
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuario_id        String    @db.Uuid
+  evento_id         String    @db.Uuid
+  estado            String    @db.VarChar(20)
+  estado_pago       String?   @db.VarChar(20)
+  referencia_pago   String?   @db.VarChar(100)
+  fecha_pago        DateTime? @db.Timestamp(6)
+  fecha_inscripcion DateTime? @default(now()) @db.Timestamp(6)
+  fecha_cancelacion DateTime? @db.Timestamp(6)
+  asistio_en        DateTime? @db.Timestamp(6)
+  evento            Evento    @relation(fields: [evento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario           Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pagos             Pago[]
+  ticket            Ticket?   @relation("InscripcionTicket")
+
+  @@unique([usuario_id, evento_id])
+  @@map("inscripciones")
 }
 
 model Pago {
-  id            Int      @id @default(autoincrement())
-  inscripcionId Int
-  proveedor     String
-  referencia    String
-  monto         Float
-  estado        EstadoPago
-  creadoEn      DateTime @default(now())
-  inscripcion   Inscripcion @relation(fields: [inscripcionId], references: [id])
+  id              String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inscripcion_id  String      @db.Uuid
+  metodo_pago     String      @db.VarChar(50)
+  referencia      String      @unique @db.VarChar(100)
+  monto           Decimal     @db.Decimal(10, 2)
+  estado          String      @db.VarChar(20)
+  fecha_pago      DateTime?   @default(now()) @db.Timestamp(6)
+  comprobante_url String?     @db.VarChar(500)
+  creado_en       DateTime?   @default(now()) @db.Timestamp(6)
+  actualizado_en  DateTime?   @default(now()) @updatedAt @db.Timestamp(6)
+  inscripcion     Inscripcion @relation(fields: [inscripcion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pagos_inscripcion_fk")
+
+  @@map("pagos")
 }
 
+model Ticket {
+  id                                      String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inscripcion_id                          String      @unique @db.Uuid
+  codigo_ticket                           String      @unique @db.VarChar(100)
+  codigo_qr                               String
+  valido                                  Boolean?    @default(true)
+  validado_en                             DateTime?   @db.Timestamp(6)
+  validado_por                            String?     @db.Uuid
+  creado_en                               DateTime?   @default(now()) @db.Timestamp(6)
+  validado_por_id                         String?     @db.Uuid
+  inscripcion                             Inscripcion @relation("InscripcionTicket", fields: [inscripcion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  validado_por                            Usuario?    @relation("TicketsValidados", fields: [validado_por_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_validado_por_fk")
+  usuarios_tickets_validado_porTousuarios Usuario?    @relation("tickets_validado_porTousuarios", fields: [validado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("tickets")
+}
+
+model Notificacion {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuario_id     String    @db.Uuid
+  tipo           String    @db.VarChar(50)
+  titulo         String    @db.VarChar(255)
+  mensaje        String
+  correo_enviado Boolean?  @default(false)
+  enviado_en     DateTime? @db.Timestamp(6)
+  leido          Boolean?  @default(false)
+  leido_en       DateTime? @db.Timestamp(6)
+  creado_en      DateTime? @default(now()) @db.Timestamp(6)
+  usuario        Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("notificaciones")
+}
+
+/// *
+///  * -------- ENUMS --------
 enum Rol {
-  ADMIN
-  USUARIO
+  ADMINISTRADOR
+  ESTUDIANTE
+  PROFESOR
+  INVITADO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
 }
 
 enum Estado {
@@ -66,10 +148,4 @@ enum Estado {
   PUBLICADO
   CANCELADO
   FINALIZADO
-}
-
-enum EstadoPago {
-  PENDIENTE
-  APROBADO
-  RECHAZADO
 }

@@ -2,7 +2,7 @@ import prisma from "../prisma/client.js";
 import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 
-// 🔹 Crear ticket (se llama desde el servicio de pagos)
+// Crear ticket (se llama desde el servicio de pagos)
 export const crearTicket = async (inscripcionId, usuarioId) => {
   try {
     // Generar código único del ticket
@@ -29,7 +29,7 @@ export const crearTicket = async (inscripcionId, usuarioId) => {
   }
 };
 
-// 🔹 Validar un ticket (cuando se escanea)
+// Validar un ticket (cuando se escanea)
 export const validarTicket = async (codigo_ticket, validadorId) => {
   try {
     const ticket = await prisma.ticket.findUnique({ where: { codigo_ticket } });
@@ -53,7 +53,7 @@ export const validarTicket = async (codigo_ticket, validadorId) => {
   }
 };
 
-// 🔹 Obtener todos los tickets (para admin)
+// Obtener todos los tickets (para admin)
 export const obtenerTickets = async () => {
   return await prisma.ticket.findMany({
     include: {

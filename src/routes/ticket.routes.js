@@ -10,19 +10,10 @@ import auth from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Crear ticket (normalmente tras confirmarse una inscripción pagada)
-router.post("/", auth, crearTicket);
-
-//Listar todos los tickets (solo admin)
-router.get("/", auth, obtenerTickets);
-
-//Obtener ticket por ID
-router.get("/:id", auth, obtenerTicketPorId);
-
-//  Validar ticket (marcar como usado)
-router.put("/:id/validar", auth, validarTicket);
-
-// Eliminar ticket (opcional)
-router.delete("/:id", auth, eliminarTicket);
+router.post("/", auth, crearTicketController);
+router.get("/", auth, obtenerTicketsController);
+router.get("/:id", auth, obtenerTicketPorIdController);
+router.put("/:id/validar", auth, validarTicketController);
+router.delete("/:id", auth, eliminarTicketController);
 
 export default router;

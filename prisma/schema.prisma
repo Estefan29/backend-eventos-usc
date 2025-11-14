@@ -8,27 +8,26 @@ datasource db {
 }
 
 model Usuario {
-  id                                     String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  correo                                 String         @unique @db.VarChar(255)
-  contrasena                             String         @db.VarChar(255)
-  nombre                                 String         @db.VarChar(100)
-  apellido                               String         @db.VarChar(100)
-  rol                                    String         @db.VarChar(20)
-  tipo_usuario                           String?        @db.VarChar(20)
-  tipo_documento                         String?        @db.VarChar(20)
-  numero_documento                       String?        @db.VarChar(50)
-  telefono                               String?        @db.VarChar(20)
-  activo                                 Boolean?       @default(true)
-  correo_verificado                      Boolean?       @default(false)
-  token_recuperar_contrasena             String?        @db.VarChar(255)
-  expiracion_token                       DateTime?      @db.Timestamp(6)
-  creado_en                              DateTime?      @default(now()) @db.Timestamp(6)
-  actualizado_en                         DateTime?      @default(now()) @updatedAt @db.Timestamp(6)
-  eventosCreados                         Evento[]       @relation("UsuarioEventos")
-  inscripciones                          Inscripcion[]
-  notificaciones                         Notificacion[]
-  ticketsValidados                       Ticket[]       @relation("TicketsValidados")
-  tickets_tickets_validado_porTousuarios Ticket[]       @relation("tickets_validado_porTousuarios")
+  id                         String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  correo                     String         @unique @db.VarChar(255)
+  contrasena                 String         @db.VarChar(255)
+  nombre                     String         @db.VarChar(100)
+  apellido                   String         @db.VarChar(100)
+  rol                        String         @db.VarChar(20)
+  tipo_usuario               String?        @db.VarChar(20)
+  tipo_documento             String?        @db.VarChar(20)
+  numero_documento           String?        @db.VarChar(50)
+  telefono                   String?        @db.VarChar(20)
+  activo                     Boolean?       @default(true)
+  correo_verificado          Boolean?       @default(false)
+  token_recuperar_contrasena String?        @db.VarChar(255)
+  expiracion_token           DateTime?      @db.Timestamp(6)
+  creado_en                  DateTime?      @default(now()) @db.Timestamp(6)
+  actualizado_en             DateTime?      @default(now()) @updatedAt @db.Timestamp(6)
+  eventosCreados             Evento[]       @relation("UsuarioEventos")
+  inscripciones              Inscripcion[]
+  notificaciones             Notificacion[]
+  ticketsValidados           Ticket[]       @relation("TicketsValidados")
 
   @@map("usuarios")
 }
@@ -53,7 +52,7 @@ model Evento {
   creado_por         String?       @db.Uuid
   creado_en          DateTime?     @default(now()) @db.Timestamp(6)
   actualizado_en     DateTime?     @default(now()) @updatedAt @db.Timestamp(6)
-  creador            Usuario?      @relation("UsuarioEventos", fields: [creado_por], references: [id], onUpdate: NoAction)
+  creador            Usuario?      @relation("UsuarioEventos", fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
   inscripciones      Inscripcion[]
 
   @@map("eventos")
@@ -90,25 +89,24 @@ model Pago {
   comprobante_url String?     @db.VarChar(500)
   creado_en       DateTime?   @default(now()) @db.Timestamp(6)
   actualizado_en  DateTime?   @default(now()) @updatedAt @db.Timestamp(6)
-  inscripcion     Inscripcion @relation(fields: [inscripcion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pagos_inscripcion_fk")
+  inscripcion     Inscripcion @relation(fields: [inscripcion_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagos_inscripcion_fk")
 
   @@map("pagos")
 }
 
 model Ticket {
-  id                                      String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  inscripcion_id                          String      @unique @db.Uuid
-  codigo_ticket                           String      @unique @db.VarChar(100)
-  codigo_qr                               String
-  valido                                  Boolean?    @default(true)
-  validado_en                             DateTime?   @db.Timestamp(6)
-  validado_por                            String?     @db.Uuid
-  creado_en                               DateTime?   @default(now()) @db.Timestamp(6)
-  validado_por_id                         String?     @db.Uuid
-  inscripcion                             Inscripcion @relation("InscripcionTicket", fields: [inscripcion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  validado_por                            Usuario?    @relation("TicketsValidados", fields: [validado_por_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_validado_por_fk")
-  usuarios_tickets_validado_porTousuarios Usuario?    @relation("tickets_validado_porTousuarios", fields: [validado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id             String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inscripcion_id String      @unique @db.Uuid
+  codigo_ticket  String      @unique @db.VarChar(100)
+  codigo_qr      String
+  valido         Boolean?    @default(true)
+  validado_en    DateTime?   @db.Timestamp(6)
+  validado_por   String?     @db.Uuid
+  creado_en      DateTime?   @default(now()) @db.Timestamp(6)
+  inscripcion    Inscripcion @relation("InscripcionTicket", fields: [inscripcion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  validador      Usuario?    @relation("TicketsValidados", fields: [validado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([codigo_ticket], map: "idx_tickets_codigo_ticket")
   @@map("tickets")
 }
 
@@ -126,26 +124,4 @@ model Notificacion {
   usuario        Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("notificaciones")
-}
-
-/// *
-///  * -------- ENUMS --------
-enum Rol {
-  ADMINISTRADOR
-  ESTUDIANTE
-  PROFESOR
-  INVITADO
-}
-
-enum EstadoPago {
-  PENDIENTE
-  APROBADO
-  RECHAZADO
-}
-
-enum Estado {
-  BORRADOR
-  PUBLICADO
-  CANCELADO
-  FINALIZADO
 }

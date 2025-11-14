@@ -38,7 +38,7 @@ export const crearEvento = async (req, res) => {
     }
 
     // Crear evento
-    const nuevoEvento = await prisma.eventos.create({
+    const nuevoEvento = await prisma.evento.create({
       data: {
         titulo,
         descripcion,
@@ -71,14 +71,15 @@ export const crearEvento = async (req, res) => {
 };
 
 // Listar todos los eventos
+// Listar todos los eventos
 export const listarEventos = async (req, res) => {
   try {
-    const eventos = await prisma.eventos.findMany({
-      orderBy: { fecha_inicio: 'asc' }
+    const eventos = await prisma.evento.findMany({
+      orderBy: { fecha_inicio: 'asc' } // singular
     });
     res.json(eventos);
   } catch (error) {
-    console.error(' Error al listar eventos:', error);
+    console.error('Error al listar eventos:', error);
     res.status(500).json({ mensaje: 'Error al listar eventos', error: error.message });
   }
 };
@@ -86,7 +87,7 @@ export const listarEventos = async (req, res) => {
 // Obtener evento por ID
 export const obtenerEvento = async (req, res) => {
   try {
-    const evento = await prisma.eventos.findUnique({
+    const evento = await prisma.evento.findUnique({
       where: { id: req.params.id }
     });
     if (!evento) return res.status(404).json({ mensaje: 'Evento no encontrado' });

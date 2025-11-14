@@ -64,7 +64,7 @@ export const validarTicket = async (id, usuarioId) => {
     data: {
       valido: false,
       validado_en: new Date(),
-      validado_por_id: usuarioId,
+      validador: { connect: { id: usuarioId } }, // conectar el usuario que valida
     },
   });
 };

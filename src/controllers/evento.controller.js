@@ -71,7 +71,6 @@ export const crearEvento = async (req, res) => {
 };
 
 // Listar todos los eventos
-// Listar todos los eventos
 export const listarEventos = async (req, res) => {
   try {
     const eventos = await prisma.evento.findMany({
@@ -97,3 +96,97 @@ export const obtenerEvento = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al obtener evento', error: error.message });
   }
 };
+// Editar evento
+export const editarEvento = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const evento = await prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    const eventoActualizado = await prisma.evento.update({
+      where: { id },
+      data: req.body
+    });
+
+    res.json({
+      mensaje: "Evento actualizado correctamente",
+      evento: eventoActualizado
+    });
+  } catch (error) {
+    console.error("Error al editar evento:", error);
+    res.status(500).json({ mensaje: "Error al editar evento", error: error.message });
+  }
+};
+
+// Eliminar evento
+export const eliminarEvento = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const evento = await prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    await prisma.evento.delete({ where: { id } });
+
+    res.json({ mensaje: "Evento eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar evento:", error);
+    res.status(500).json({ mensaje: "Error al eliminar evento", error: error.message });
+  }
+};
+
+// Activar evento
+export const activarEvento = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const evento = await prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    const eventoActivo = await prisma.evento.update({
+      where: { id },
+      data: { activo: true }
+    });
+
+    res.json({
+      mensaje: "Evento activado correctamente",
+      evento: eventoActivo
+    });
+  } catch (error) {
+    console.error("Error al activar evento:", error);
+    res.status(500).json({ mensaje: "Error al activar evento", error: error.message });
+  }
+};
+
+// Desactivar evento
+export const desactivarEvento = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const evento = await prisma.evento.findUnique({ where: { id } });
+    if (!evento) {
+      return res.status(404).json({ mensaje: "Evento no encontrado" });
+    }
+
+    const eventoInactivo = await prisma.evento.update({
+      where: { id },
+      data: { activo: false }
+    });
+
+    res.json({
+      mensaje: "Evento desactivado correctamente",
+      evento: eventoInactivo
+    });
+  } catch (error) {
+    console.error("Error al desactivar evento:", error);
+    res.status(500).json({ mensaje: "Error al desactivar evento", error: error.message });
+  }
+};
+

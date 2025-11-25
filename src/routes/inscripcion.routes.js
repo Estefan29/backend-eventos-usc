@@ -1,27 +1,21 @@
-import { Router } from "express";
-import {
-  crearInscripcion,
-  obtenerInscripciones,
-  obtenerInscripcionPorId,
-  cancelarInscripcion
-} from "../controllers/inscripcion.controller.js";
+import express from 'express';
+import { 
+  inscribirUsuario, 
+  listarInscripciones,
+  obtenerInscripcion,
+  cancelarInscripcion,
+  registrarAsistencia
+} from '../controllers/inscripcion.controller.js';
+import auth from '../middlewares/authMiddleware.js';
+import { esAdministrador } from '../middlewares/rolesMiddleware.js';
 
-import auth from "../middlewares/authMiddleware.js";
-import { validateSchema } from "../middlewares/validateSchema.js";
-import { inscripcionSchema } from "../validations/inscripcion.schema.js";
+const router = express.Router();
 
-const router = Router();
-
-// Crear inscripción con validación
-router.post("/", auth, validateSchema(inscripcionSchema), crearInscripcion);
-
-// Listar inscripciones
-router.get("/", auth, obtenerInscripciones);
-
-// Obtener inscripción por ID
-router.get("/:id", auth, obtenerInscripcionPorId);
-
-// Cancelar inscripción
-router.put("/:id/cancelar", auth, cancelarInscripcion);
+// Todas las rutas requieren autenticación
+router.post('/', auth, inscribirUsuario);
+router.get('/', auth, listarInscripciones);
+router.get('/:id', auth, obtenerInscripcion);
+router.put('/:id/cancelar', auth, cancelarInscripcion);
+router.put('/:id/asistencia', auth, esAdministrador, registrarAsistencia);
 
 export default router;

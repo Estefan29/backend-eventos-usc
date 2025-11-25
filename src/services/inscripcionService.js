@@ -1,22 +1,119 @@
-const prisma = require('../config/db');
-const QRCode = require('qrcode');
+import prisma from "../config/prismaClient.js";
 
-async function inscribir(usuarioId, eventoId) {
-  // validar cupo
-  const evento = await prisma.evento.findUnique({ where: { id: Number(eventoId) } });
-  const inscritos = await prisma.inscripcion.count({ where: { eventoId: Number(eventoId) } });
-  if (inscritos >= evento.cupo) throw new Error('Cupo agotado');
+/**
+ * Crear inscripción con TODAS LAS VALIDACIONES
+ */
+export const crearInscripcionService = async ({ usuario_id, evento_id }) => {
+  // 1. Validar usuario existe
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: usuario_id },
+  });
+  if (!usuario) {
+    throw { status: 404, message: "El usuario no existe" };
+  }
 
-  const ins = await prisma.inscripcion.create({
-    data: { usuarioId: Number(usuarioId), eventoId: Number(eventoId), estadoPago: evento.esPago ? 'PENDIENTE' : 'APROBADO' }
+  // 2. Validar evento existe
+  const evento = await prisma.evento.findUnique({
+    where: { id: evento_id },
+  });
+  if (!evento) {
+    throw { status: 404, message: "El evento no existe" };
+  }
+
+  // 3. Validar que el usuario no este inscrito ya
+  const existente = await prisma.inscripcion.findUnique({
+    where: {
+      usuario_id_evento_id: {
+        usuario_id,
+        evento_id,
+      },
+    },
   });
 
-  // generar QR (texto con id de inscripcion) y guardarlo
-  const qrData = `inscripcion:${ins.id}`;
-  const qrImg = await QRCode.toDataURL(qrData);
-  await prisma.inscripcion.update({ where: { id: ins.id }, data: { ticketQR: qrImg }});
+  if (existente) {
+    throw { status: 400, message: "La inscripción ya existe" };
+  }
 
-  return { inscripcion: ins, qr: qrImg, evento };
-}
+  // 4. Validar cupos
+  if (evento.cupos_disponibles <= 0) {
+    throw { status: 400, message: "No hay cupos disponibles" };
+  }
 
-module.exports = { inscribir };
+  // 5. Validar fechas de inscripción
+  const ahora = new Date();
+  if (ahora < new Date(evento.inicio_inscripcion) || ahora > new Date(evento.fin_inscripcion)) {
+    throw { status: 400, message: "Fuera de fecha de inscripción" };
+  }
+
+  // 6. Crear inscripción
+  const inscripcion = await prisma.inscripcion.create({
+    data: {
+      usuario_id,
+      evento_id,
+      estado: "PENDIENTE",
+    },
+  });
+
+  // 7. Restar cupo
+  await prisma.evento.update({
+    where: { id: evento.id },
+    data: {
+      cupos_disponibles: evento.cupos_disponibles - 1,
+    },
+  });
+
+  return inscripcion;
+};
+
+
+/**
+ * Listar inscripciones
+ */
+export const listarInscripcionesService = async (filtros) => {
+  return prisma.inscripcion.findMany({
+    where: {
+      usuario_id: filtros.usuario_id || undefined,
+      evento_id: filtros.evento_id || undefined,
+    },
+  });
+};
+
+
+/**
+ * Obtener inscripción por ID
+ */
+export const obtenerInscripcionPorIdService = async (id) => {
+  const inscripcion = await prisma.inscripcion.findUnique({ where: { id } });
+
+  if (!inscripcion) {
+    throw { status: 404, message: "Inscripción no encontrada" };
+  }
+
+  return inscripcion;
+};
+
+
+/**
+ * Cancelar inscripción
+ */
+export const cancelarInscripcionService = async (id) => {
+  const inscripcion = await prisma.inscripcion.findUnique({
+    where: { id },
+  });
+
+  if (!inscripcion) {
+    throw { status: 404, message: "Inscripción no existe" };
+  }
+
+  if (inscripcion.estado === "CANCELADA") {
+    throw { status: 400, message: "La inscripción ya está cancelada" };
+  }
+
+  return prisma.inscripcion.update({
+    where: { id },
+    data: {
+      estado: "CANCELADA",
+      fecha_cancelacion: new Date(),
+    },
+  });
+};

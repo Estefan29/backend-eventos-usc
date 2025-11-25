@@ -1,16 +1,27 @@
 import express from 'express';
-import { crearEvento, listarEventos, obtenerEvento } from '../controllers/evento.controller.js';
-import auth from '../middlewares/authMiddleware.js';
+import {
+  crearEvento,
+  listarEventos,
+  obtenerEvento,
+  editarEvento,
+  eliminarEvento,
+  activarEvento,
+  desactivarEvento
+} from '../controllers/evento.controller.js';
+import auth from "../middlewares/authMiddleware.js";
+import { validateSchema } from "../middlewares/validateSchema.js";
+import { eventoSchema } from "../validations/evento.schema.js";
 
 const router = express.Router();
 
-// Crear evento (solo admin)
-router.post('/', auth, crearEvento);
-
-// Listar todos
+// Rutas públicas
 router.get('/', listarEventos);
-
-// Obtener uno
 router.get('/:id', obtenerEvento);
 
+// Rutas protegidas (solo admin)
+router.post('/', auth, esAdministrador, crearEvento);
+router.put('/:id', auth, esAdministrador, actualizarEvento);
+router.delete('/:id', auth, esAdministrador, eliminarEvento);
+
 export default router;
+

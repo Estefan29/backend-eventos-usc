@@ -25,98 +25,150 @@
       </div>
 
       <div class="content">
-        <h1>Crear nuevo evento</h1>
-
-        <form @submit.prevent="handleSubmit" class="evento-form">
-          <div class="form-group">
-            <label>Nombre del evento</label>
-            <input
-              v-model="formData.nombre"
-              type="text"
-              required
-            />
+        <div class="header">
+          <div>
+            <button @click="goBack" class="btn-back">← Volver</button>
+            <h1>Crear Nuevo Evento</h1>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label>Descripción</label>
-            <textarea
-              v-model="formData.descripcion"
-              rows="4"
-              required
-            ></textarea>
-          </div>
+        <div class="form-container">
+          <form @submit.prevent="handleSubmit">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="titulo">Nombre del evento *</label>
+                <input
+                  type="text"
+                  id="titulo"
+                  v-model="form.titulo"
+                  placeholder="Ej: Conferencia de Tecnología"
+                  required
+                />
+              </div>
 
-          <div class="form-group">
-            <label>Fecha y hora</label>
-            <input
-              v-model="formData.fecha"
-              type="datetime-local"
-              required
-            />
-          </div>
+              <div class="form-group">
+                <label for="categoria">Categoría *</label>
+                <select id="categoria" v-model="form.categoria" required>
+                  <option value="">Seleccionar categoría</option>
+                  <option value="Tecnología">Tecnología</option>
+                  <option value="Arte">Arte</option>
+                  <option value="Deportes">Deportes</option>
+                  <option value="Música">Música</option>
+                  <option value="Educación">Educación</option>
+                  <option value="Negocios">Negocios</option>
+                </select>
+              </div>
 
-          <div class="form-group">
-            <label>Lugar</label>
-            <input
-              v-model="formData.ubicacion"
-              type="text"
-              required
-            />
-          </div>
+              <div class="form-group">
+                <label for="fecha_inicio">Fecha del evento *</label>
+                <input
+                  type="date"
+                  id="fecha_inicio"
+                  v-model="form.fecha_inicio"
+                  required
+                />
+              </div>
 
-          <div class="form-group">
-            <label>Tipo de evento</label>
-            <input
-              v-model="formData.categoria"
-              type="text"
-              placeholder="Ej: Conferencia, Taller, Concierto"
-              required
-            />
-          </div>
+              <div class="form-group">
+                <label for="hora">Hora *</label>
+                <input
+                  type="time"
+                  id="hora"
+                  v-model="form.hora"
+                  required
+                />
+              </div>
 
-          <div class="form-group">
-            <label>Precio (COP)</label>
-            <input
-              v-model.number="formData.precio"
-              type="number"
-              min="0"
-              placeholder="0 para eventos gratuitos"
-            />
-          </div>
+              <div class="form-group">
+                <label for="lugar">Lugar *</label>
+                <input
+                  type="text"
+                  id="lugar"
+                  v-model="form.lugar"
+                  placeholder="Ej: Auditorio Principal"
+                  required
+                />
+              </div>
 
-          <div class="form-group upload-section">
-            <label>Cargar imagen</label>
-            <div class="upload-box">
-              <input
-                type="file"
-                @change="handleFileUpload"
-                accept="image/*"
-                id="file-upload"
-                hidden
-              />
-              <label for="file-upload" class="upload-label">
-                <span v-if="!imagePreview">
-                  Arrastra y suelta una imagen aquí o
-                </span>
-                <img v-if="imagePreview" :src="imagePreview" alt="Preview" class="image-preview" />
-              </label>
-              <button type="button" @click="triggerFileInput" class="btn-seleccionar">
-                Selecciona un archivo
+              <div class="form-group">
+                <label for="capacidad">Capacidad *</label>
+                <input
+                  type="number"
+                  id="capacidad"
+                  v-model="form.capacidad"
+                  placeholder="Número de asistentes"
+                  min="1"
+                  required
+                />
+              </div>
+
+              <div class="form-group full-width">
+                <label for="descripcion">Descripción *</label>
+                <textarea
+                  id="descripcion"
+                  v-model="form.descripcion"
+                  placeholder="Describe el evento..."
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="precio">Precio</label>
+                <input
+                  type="number"
+                  id="precio"
+                  v-model="form.precio"
+                  placeholder="0 para eventos gratuitos"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="imagen">URL de la imagen</label>
+                <input
+                  type="url"
+                  id="imagen"
+                  v-model="form.imagen"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="organizador">Organizador</label>
+                <input
+                  type="text"
+                  id="organizador"
+                  v-model="form.organizador"
+                  placeholder="Nombre del organizador"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="estado">Estado *</label>
+                <select id="estado" v-model="form.estado" required>
+                  <option value="activo">Activo</option>
+                  <option value="cancelado">Cancelado</option>
+                  <option value="finalizado">Finalizado</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="message" class="message" :class="messageType">
+              {{ message }}
+            </div>
+
+            <div class="form-actions">
+              <button type="button" @click="goBack" class="btn-cancel">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-submit" :disabled="loading">
+                {{ loading ? 'Creando...' : 'Crear Evento' }}
               </button>
             </div>
-          </div>
-
-          <button type="submit" class="btn-crear-evento" :disabled="loading">
-            {{ loading ? 'Creando...' : 'Crear Evento' }}
-          </button>
-
-          <div v-if="successMessage" class="success-message">
-            {{ successMessage }}
-          </div>
-          <div v-if="errorMessage" class="error-message">
-            {{ errorMessage }}
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -125,70 +177,50 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import authService from '../../services/authService';
-import eventoService from '../../services/eventoService';
+import authService from '@/services/authService';
+import eventoService from '@/services/eventoService';
 
 const router = useRouter();
 const loading = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
-const imagePreview = ref('');
+const message = ref('');
+const messageType = ref('');
 
-const formData = ref({
-  nombre: '',
-  descripcion: '',
-  fecha: '',
-  ubicacion: '',
+const form = ref({
+  titulo: '',
   categoria: '',
+  fecha_inicio: '',
+  hora: '',
+  lugar: '',
+  capacidad: '',
+  descripcion: '',
   precio: 0,
-  imagen: ''
+  imagen: '',
+  organizador: '',
+  estado: 'activo'
 });
 
-const handleFileUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreview.value = e.target.result;
-      formData.value.imagen = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
-const triggerFileInput = () => {
-  document.getElementById('file-upload').click();
-};
-
 const handleSubmit = async () => {
-  errorMessage.value = '';
-  successMessage.value = '';
   loading.value = true;
+  message.value = '';
 
   try {
-    const eventoData = {
-      nombre: formData.value.nombre,
-      descripcion: formData.value.descripcion,
-      fecha: formData.value.fecha,
-      ubicacion: formData.value.ubicacion,
-      categoria: formData.value.categoria,
-      precio: formData.value.precio || 0,
-      imagen: formData.value.imagen || null,
-      destacado: false
-    };
-
-    await eventoService.create(eventoData);
-    
-    successMessage.value = '✓ Evento creado exitosamente';
+    await eventoService.create(form.value);
+    message.value = 'Evento creado exitosamente';
+    messageType.value = 'success';
     
     setTimeout(() => {
       router.push('/admin/eventos');
     }, 1500);
   } catch (error) {
-    errorMessage.value = error.response?.data?.mensaje || 'Error al crear el evento';
+    message.value = error.response?.data?.mensaje || 'Error al crear el evento';
+    messageType.value = 'error';
   } finally {
     loading.value = false;
   }
+};
+
+const goBack = () => {
+  router.push('/admin/eventos');
 };
 
 const handleLogout = () => {
@@ -260,134 +292,148 @@ const handleLogout = () => {
 
 .content {
   padding: 2.5rem;
-  max-width: 800px;
+  max-width: 1200px;
 }
 
-.content h1 {
-  font-size: 2rem;
-  color: #333;
+.header {
   margin-bottom: 2rem;
 }
 
-.evento-form {
+.btn-back {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-back:hover {
+  color: #2196F3;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #333;
+  margin: 0;
+}
+
+.form-container {
   background: white;
-  padding: 2.5rem;
   border-radius: 12px;
+  padding: 2.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .form-group {
-  margin-bottom: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.6rem;
-  color: #555;
   font-weight: 600;
-  font-size: 0.95rem;
+  color: #333;
+  font-size: 0.9rem;
 }
 
 .form-group input,
+.form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 0.8rem;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 1rem;
-  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
 }
 
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #2196F3;
 }
 
-.upload-section {
-  margin: 2rem 0;
+.form-group textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
-.upload-box {
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  background: #fafafa;
-}
-
-.upload-label {
-  display: block;
-  cursor: pointer;
-  color: #666;
-  margin-bottom: 1rem;
-  min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-}
-
-.btn-seleccionar {
-  padding: 0.7rem 1.5rem;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.btn-seleccionar:hover {
-  background: #e0e0e0;
-}
-
-.btn-crear-evento {
-  width: 100%;
+.message {
   padding: 1rem;
-  background: #2196F3;
-  color: white;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-submit {
+  padding: 0.9rem 2rem;
   border: none;
   border-radius: 6px;
-  font-size: 1.1rem;
   font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.2s;
 }
 
-.btn-crear-evento:hover:not(:disabled) {
-  background: #1976D2;
+.btn-cancel {
+  background: #f5f5f5;
+  color: #666;
 }
 
-.btn-crear-evento:disabled {
-  opacity: 0.6;
+.btn-cancel:hover {
+  background: #e5e5e5;
+}
+
+.btn-submit {
+  background: #333;
+  color: white;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #555;
+}
+
+.btn-submit:disabled {
+  background: #999;
   cursor: not-allowed;
 }
 
-.success-message {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #e8f5e9;
-  color: #2e7d32;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.error-message {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #ffebee;
-  color: #c62828;
-  border-radius: 6px;
-  text-align: center;
-}
-
-@media (max-width: 968px) {
+@media (max-width: 768px) {
   .admin-container {
     grid-template-columns: 1fr;
   }
@@ -396,11 +442,15 @@ const handleLogout = () => {
     display: none;
   }
 
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .content {
     padding: 1.5rem;
   }
 
-  .evento-form {
+  .form-container {
     padding: 1.5rem;
   }
 }

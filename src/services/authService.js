@@ -45,7 +45,7 @@ const authService = {
 
   isAdmin() {
     const user = this.getCurrentUser();
-    return user?.rol === 'admin';
+    return user?.rol === 'ADMIN';
   }
 };
 

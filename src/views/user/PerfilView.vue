@@ -1,578 +1,388 @@
 <template>
-  <div class="profile-page">
+  <div class="perfil-page">
     <Navbar />
 
-    <div class="profile-container">
-      <div class="profile-card">
-        <div class="profile-header">
-          <div class="avatar">
-            {{ user?.nombre?.charAt(0).toUpperCase() }}
-          </div>
-          <h1>{{ user?.nombre }}</h1>
-          <p class="email">{{ user?.email }}</p>
-          <span class="role-badge" :class="user?.rol">
-            {{ user?.rol === 'admin' ? '👑 Administrador' : '👤 Usuario' }}
-          </span>
-        </div>
+    <div class="perfil-container">
+      <h1 class="page-title">Mi Perfil</h1>
 
-        <div class="profile-stats">
-          <div class="stat-item">
-            <span class="stat-icon">🎫</span>
-            <div>
-              <p class="stat-value">{{ stats.totalTickets }}</p>
-              <p class="stat-label">Tickets</p>
+      <div class="perfil-card">
+        <!-- Avatar -->
+        <div class="avatar-section">
+          <div class="avatar-circle">
+            <div class="avatar-inner">
+              {{ getInitials() }}
             </div>
           </div>
-
-          <div class="stat-item">
-            <span class="stat-icon">✅</span>
-            <div>
-              <p class="stat-value">{{ stats.eventosAsistidos }}</p>
-              <p class="stat-label">Eventos Asistidos</p>
-            </div>
-          </div>
-
-          <div class="stat-item">
-            <span class="stat-icon">⏳</span>
-            <div>
-              <p class="stat-value">{{ stats.eventosPendientes }}</p>
-              <p class="stat-label">Pendientes</p>
-            </div>
+          <div class="user-info">
+            <h2 class="user-name">{{ user?.nombre || 'Usuario' }}</h2>
+            <p class="user-role">USUARIO</p>
           </div>
         </div>
 
-        <div class="profile-actions">
-          <button @click="showEditModal = true" class="btn-edit">
-            ✏️ Editar Perfil
-          </button>
-          <button @click="handleLogout" class="btn-logout">
-            🚪 Cerrar Sesión
-          </button>
-        </div>
-      </div>
-
-      <div class="recent-activity">
-        <h2>Actividad Reciente</h2>
-        
-        <Loading v-if="loadingActivity" message="Cargando actividad..." />
-
-        <div v-else-if="recentTickets.length > 0" class="activity-list">
-          <div
-            v-for="ticket in recentTickets"
-            :key="ticket.id"
-            class="activity-item"
-          >
-            <div class="activity-icon">🎫</div>
-            <div class="activity-content">
-              <h3>{{ ticket.evento_nombre }}</h3>
-              <p>{{ formatDate(ticket.fecha_emision) }}</p>
-            </div>
-            <span class="activity-status" :class="{ validated: ticket.validado }">
-              {{ ticket.validado ? '✓ Validado' : '⏳ Pendiente' }}
-            </span>
-          </div>
-        </div>
-
-        <div v-else class="empty-activity">
-          <p>No hay actividad reciente</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Editar Perfil -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <h2>Editar Perfil</h2>
-
-        <form @submit.prevent="handleUpdateProfile">
+        <!-- Formulario -->
+        <form @submit.prevent="handleUpdateProfile" class="perfil-form">
           <div class="form-group">
-            <label>Nombre</label>
+            <label for="nombre">Nombre completo</label>
             <input
-              v-model="editForm.nombre"
               type="text"
+              id="nombre"
+              v-model="editForm.nombre"
               placeholder="Tu nombre completo"
               required
             />
           </div>
 
           <div class="form-group">
-            <label>Email</label>
+            <label for="email">Correo electrónico</label>
             <input
-              v-model="editForm.email"
               type="email"
+              id="email"
+              v-model="editForm.email"
               placeholder="tu@email.com"
               required
             />
           </div>
 
           <div class="form-group">
-            <label>Nueva Contraseña (opcional)</label>
+            <label for="password">Contraseña</label>
             <input
-              v-model="editForm.contraseña"
               type="password"
-              placeholder="Dejar en blanco para no cambiar"
+              id="password"
+              v-model="editForm.password"
+              placeholder="Nueva contraseña (opcional)"
             />
           </div>
 
-          <div class="modal-actions">
-            <button type="button" @click="closeModal" class="btn-cancel">
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input
+              type="tel"
+              id="telefono"
+              v-model="editForm.telefono"
+              placeholder="Tu número de teléfono"
+            />
+          </div>
+
+          <div v-if="message" class="message" :class="messageType">
+            {{ message }}
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="handleCancel" class="btn-cancel">
               Cancelar
             </button>
-            <button type="submit" class="btn-save" :disabled="updating">
-              {{ updating ? 'Guardando...' : 'Guardar Cambios' }}
+            <button type="submit" class="btn-save" :disabled="loading">
+              {{ loading ? 'Guardando...' : 'Guardar cambios' }}
             </button>
           </div>
         </form>
-
-        <div v-if="updateMessage" class="alert" :class="updateSuccess ? 'alert-success' : 'alert-error'">
-          {{ updateMessage }}
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Navbar from '@/components/layout/Navbar.vue';
-import Loading from '@/components/common/Loading.vue';
 import authService from '@/services/authService';
-import ticketService from '@/services/ticketService';
 import usuarioService from '@/services/usuarioService';
 
 const router = useRouter();
-
 const user = ref(authService.getCurrentUser());
-const loadingActivity = ref(true);
-const recentTickets = ref([]);
-const showEditModal = ref(false);
-const updating = ref(false);
-const updateMessage = ref('');
-const updateSuccess = ref(false);
-
-const stats = computed(() => {
-  const total = recentTickets.value.length;
-  const validados = recentTickets.value.filter(t => t.validado).length;
-  return {
-    totalTickets: total,
-    eventosAsistidos: validados,
-    eventosPendientes: total - validados
-  };
-});
+const loading = ref(false);
+const message = ref('');
+const messageType = ref('');
 
 const editForm = ref({
   nombre: user.value?.nombre || '',
   email: user.value?.email || '',
-  contraseña: ''
+  password: '',
+  telefono: user.value?.telefono || ''
 });
 
-const loadRecentActivity = async () => {
-  loadingActivity.value = true;
-  try {
-    const data = await ticketService.getAll();
-    recentTickets.value = (data.tickets || data).slice(0, 5);
-  } catch (error) {
-    console.error('Error cargando actividad:', error);
-  } finally {
-    loadingActivity.value = false;
+const getInitials = () => {
+  const nombre = user.value?.nombre || 'Usuario';
+  const words = nombre.split(' ');
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
   }
+  return nombre.substring(0, 2).toUpperCase();
 };
 
 const handleUpdateProfile = async () => {
-  updateMessage.value = '';
-  updating.value = true;
+  message.value = '';
+  loading.value = true;
 
   try {
     const updateData = {
       nombre: editForm.value.nombre,
-      email: editForm.value.email
+      email: editForm.value.email,
+      telefono: editForm.value.telefono
     };
 
-    if (editForm.value.contraseña) {
-      updateData.contraseña = editForm.value.contraseña;
+    if (editForm.value.password) {
+      updateData.password = editForm.value.password;
     }
 
     await usuarioService.update(user.value.id, updateData);
 
     const updatedUser = { ...user.value, ...updateData };
-    delete updatedUser.contraseña;
+    delete updatedUser.password;
     localStorage.setItem('user', JSON.stringify(updatedUser));
     user.value = updatedUser;
 
-    updateMessage.value = '✓ Perfil actualizado correctamente';
-    updateSuccess.value = true;
+    message.value = 'Perfil actualizado correctamente';
+    messageType.value = 'success';
 
     setTimeout(() => {
-      showEditModal.value = false;
-      updateMessage.value = '';
-    }, 2000);
+      message.value = '';
+    }, 3000);
   } catch (error) {
-    updateMessage.value = error.response?.data?.mensaje || 'Error al actualizar perfil';
-    updateSuccess.value = false;
+    message.value = error.response?.data?.mensaje || 'Error al actualizar perfil';
+    messageType.value = 'error';
   } finally {
-    updating.value = false;
+    loading.value = false;
   }
 };
 
-const closeModal = () => {
-  showEditModal.value = false;
-  updateMessage.value = '';
-  editForm.value.contraseña = '';
-};
-
-const handleLogout = () => {
-  authService.logout();
-  router.push('/login');
-};
-
-const formatDate = (date) => {
-  if (!date) return 'Sin fecha';
-  return new Date(date).toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+const handleCancel = () => {
+  editForm.value = {
+    nombre: user.value?.nombre || '',
+    email: user.value?.email || '',
+    password: '',
+    telefono: user.value?.telefono || ''
+  };
+  message.value = '';
 };
 
 onMounted(() => {
   if (!authService.isAuthenticated()) {
     router.push('/login');
-    return;
   }
-  loadRecentActivity();
 });
 </script>
 
 <style scoped>
-.profile-page {
+.perfil-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding-bottom: 3rem;
+  background-color: #f5f5f5;
 }
 
-.profile-container {
-  max-width: 1200px;
+.perfil-container {
+  max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 2rem;
 }
 
-.profile-card {
-  background: white;
-  border-radius: 20px;
-  padding: 3rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  height: fit-content;
-}
-
-.profile-header {
-  text-align: center;
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a1a1a;
   margin-bottom: 2rem;
 }
 
-.avatar {
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.perfil-card {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.avatar-circle {
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
-  font-weight: 800;
-  margin: 0 auto 1rem;
+  flex-shrink: 0;
 }
 
-.profile-header h1 {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-.email {
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: #f0f0f0;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #666;
-}
-
-.role-badge.admin {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  color: #333;
-}
-
-.profile-stats {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin: 2rem 0;
-  padding: 2rem 0;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.stat-icon {
-  font-size: 2rem;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #667eea;
-  margin: 0;
-}
-
-.stat-label {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.profile-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.btn-edit,
-.btn-logout {
-  width: 100%;
-  padding: 1rem;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-edit {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-edit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-logout {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.btn-logout:hover {
-  background: #e0e0e0;
-}
-
-.recent-activity {
-  background: white;
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.recent-activity h2 {
-  margin-bottom: 2rem;
-  color: #333;
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: #f9f9f9;
-  border-radius: 15px;
-  transition: all 0.3s;
-}
-
-.activity-item:hover {
-  background: #f0f0f0;
-  transform: translateX(5px);
-}
-
-.activity-icon {
-  font-size: 2rem;
-}
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-content h3 {
-  font-size: 1.1rem;
-  color: #333;
-  margin: 0 0 0.25rem 0;
-}
-
-.activity-content p {
-  color: #999;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.activity-status {
-  padding: 0.5rem 1rem;
-  background: #ffc107;
-  color: white;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.activity-status.validated {
-  background: #28a745;
-}
-
-.empty-activity {
-  text-align: center;
-  padding: 3rem;
-  color: #999;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+.avatar-inner {
+  width: 100px;
+  height: 100px;
+  background: #1976d2;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
 }
 
-.modal-content {
-  background: white;
-  padding: 3rem;
-  border-radius: 20px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
+.user-info {
+  flex: 1;
 }
 
-.modal-content h2 {
-  margin-bottom: 2rem;
-  color: #333;
+.user-name {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+}
+
+.user-role {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #666;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+  background: white;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+.form-group input::placeholder {
+  color: #9ca3af;
 }
 
-.btn-cancel,
-.btn-save {
-  flex: 1;
+.message {
   padding: 1rem;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-cancel {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.btn-cancel:hover {
-  background: #e0e0e0;
-}
-
-.btn-save {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-save:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.alert {
-  padding: 1rem;
-  border-radius: 10px;
-  margin-top: 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   text-align: center;
 }
 
-.alert-success {
-  background: #d4edda;
+.message.success {
+  background-color: #d4edda;
   color: #155724;
   border: 1px solid #c3e6cb;
 }
 
-.alert-error {
-  background: #fee;
-  color: #c33;
-  border: 1px solid #fcc;
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
-@media (max-width: 968px) {
-  .profile-container {
-    grid-template-columns: 1fr;
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  background-color: #e5e5e5;
+}
+
+.btn-save {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  background-color: #1976d2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.btn-save:disabled {
+  background-color: #90caf9;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .perfil-container {
+    padding: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .perfil-card {
+    padding: 1.5rem;
+  }
+
+  .avatar-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .avatar-circle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .avatar-inner {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+  }
+
+  .user-name {
+    font-size: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
   }
 }
 </style>

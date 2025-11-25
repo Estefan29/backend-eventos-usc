@@ -44,9 +44,10 @@
             </thead>
             <tbody>
               <tr v-for="evento in eventos" :key="evento.id">
-                <td>{{ evento.nombre }}</td>
-                <td>{{ formatDate(evento.fecha) }}</td>
-                <td>{{ evento.ubicacion }}</td>
+               <td>{{ evento.titulo }}</td>
+<td>{{ formatDate(evento.fecha_inicio) }}</td>
+<td>{{ evento.lugar }}</td>
+
                 <td>
                   <button @click="editarEvento(evento.id)" class="btn-editar">
                     Editar

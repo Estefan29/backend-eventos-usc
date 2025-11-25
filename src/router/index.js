@@ -15,6 +15,7 @@ import AdminDashboardView from '../views/admin/AdminDashboardView.vue';
 import AdminEventosView from '../views/admin/AdminEventosView.vue';
 import AdminCrearEventoView from '../views/admin/AdminCrearEventoView.vue';
 import AdminUsuariosView from '../views/admin/AdminUsuariosView.vue';
+import AdminEditarEventoView from '../views/admin/AdminEditarEventoView.vue';
 
 const routes = [
   {
@@ -78,6 +79,12 @@ const routes = [
     path: '/admin/eventos/crear',
     name: 'AdminCrearEvento',
     component: AdminCrearEventoView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/eventos/editar/:id',
+    name: 'AdminEditarEvento',
+    component: AdminEditarEventoView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
